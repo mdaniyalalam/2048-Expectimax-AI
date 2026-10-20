@@ -1,6 +1,9 @@
 # PROJECT PROPOSAL
-*Semester Lab Project · Weightage 1 mark*
+## FAST — NATIONAL UNIVERSITY OF COMPUTER AND EMERGING SCIENCES  
+*FAST School of Computing  ·  Karachi Campus  ·  Department of Artificial Intelligence & Data Science*     
+*AL-2002 Artificial Intelligence (Laboratory)  ·  Fall 2026*    
 
+*Semester Lab Project · Weightage 1 mark*  
 ## Group Information
 
 | | Name | Roll Number | Section | Role in the project |
