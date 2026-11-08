@@ -126,14 +126,13 @@ class HeuristicEvaluator:
     """Scores a board from 'how good does this look for the player?'.
     Higher = better. The utility is a weighted sum of four heuristics:
 
-      corner      biggest tile sits in a corner          (bigger is better)
-      empty       number of empty cells                  (bigger is better)
-      monotonic   rows/columns that only go up or down   (0 is perfect, negative otherwise)
-      smooth      neighbouring tiles have similar values (0 is perfect, negative otherwise)
+      corner      biggest tile sits in a corner          
+      empty       number of empty cells                  
+      monotonic   rows/columns that only go up or down  
+      smooth      neighbouring tiles have similar values 
 
     Tile values are converted with log2 (2->1, 4->2, 8->3 ...) so that a huge tile
-    does not drown out everything else. The weights can be changed freely, e.g. when
-    tuning with headless batch simulations later on."""
+    does not drown out everything else."""
 
     def __init__(self, w_corner=1.0, w_empty=2.0, w_mono=1.0, w_smooth=0.5):
         self.w_corner = w_corner
