@@ -1,17 +1,13 @@
 """Heuristic evaluation function for scoring 2048 board states."""
 
-import math
-
-from board import SIZE
-
+_LOG2 = {0: 0.0, **{1 << p: float(p) for p in range(1, 20)}}
 
 class HeuristicEvaluator:
-    """Scores a board from 'how good does this look for the player?'.
-    Higher = better. The utility is a weighted sum of four heuristics:
+    """The utility is a weighted sum of four heuristics:
 
       corner      biggest tile sits in a corner
       empty       number of empty cells
-      monotonic   rows/columns that only go up or down
+      mono        rows/columns that only go up or down
       smooth      neighbouring tiles have similar values
 
     Tile values are converted with log2 (2->1, 4->2, 8->3 ...) so that a huge tile
@@ -23,69 +19,64 @@ class HeuristicEvaluator:
         self.w_mono = w_mono
         self.w_smooth = w_smooth
 
-    @staticmethod
-    def _log(value):
-        """log2 of a tile value; empty cells count as 0."""
-        return math.log2(value) if value > 0 else 0.0
-
-    def corner_score(self, board):
-        """log2(max tile) if a biggest tile is in a corner, otherwise 0."""
-        g, last = board.grid, SIZE - 1
-        corners = (g[0][0], g[0][last], g[last][0], g[last][last])
-        biggest = board.max_tile()
-        return self._log(biggest) if biggest in corners else 0.0
-
-    def empty_score(self, board):
-        """Number of empty cells (0 to 16)."""
-        return float(len(board.empty_cells()))
-
-    def monotonicity_score(self, board):
-        """Minus the total amount by which rows and columns break a steady
-        increase or decrease. 0 means all 8 lines are perfectly monotonic."""
-        g = board.grid
-        lines = [row for row in g] + [list(col) for col in zip(*g)]
-        penalty = 0.0
-        for line in lines:
-            vals = [self._log(v) for v in line]
-            up = down = 0.0
-            for a, b in zip(vals, vals[1:]):
-                if a > b:
-                    down += a - b        # line is going down here
-                else:
-                    up += b - a          # line is going up here
-            penalty += min(up, down)     # cost of the less-followed direction
-        return -penalty
-
-    def smoothness_score(self, board):
-        """Minus the sum of log-differences between touching non-empty tiles."""
-        g = board.grid
-        total = 0.0
-        for r in range(SIZE):
-            for c in range(SIZE):
-                if g[r][c] == 0:
-                    continue
-                here = self._log(g[r][c])
-                if c + 1 < SIZE and g[r][c + 1] != 0:
-                    total += abs(here - self._log(g[r][c + 1]))
-                if r + 1 < SIZE and g[r + 1][c] != 0:
-                    total += abs(here - self._log(g[r + 1][c]))
-        return -total
-
     def components(self, board):
         """The four raw heuristic values (before weighting), as a dict."""
-        return {
-            "corner": self.corner_score(board),
-            "empty": self.empty_score(board),
-            "mono": self.monotonicity_score(board),
-            "smooth": self.smoothness_score(board),
-        }
+        g = board.grid
+        log = _LOG2
+        r0, r1, r2, r3 = g[0], g[1], g[2], g[3]
+        a0, a1, a2, a3 = log[r0[0]], log[r0[1]], log[r0[2]], log[r0[3]]
+        b0, b1, b2, b3 = log[r1[0]], log[r1[1]], log[r1[2]], log[r1[3]]
+        c0, c1, c2, c3 = log[r2[0]], log[r2[1]], log[r2[2]], log[r2[3]]
+        d0, d1, d2, d3 = log[r3[0]], log[r3[1]], log[r3[2]], log[r3[3]]
+
+        empty = (
+            (a0 == 0) + (a1 == 0) + (a2 == 0) + (a3 == 0)
+            + (b0 == 0) + (b1 == 0) + (b2 == 0) + (b3 == 0)
+            + (c0 == 0) + (c1 == 0) + (c2 == 0) + (c3 == 0)
+            + (d0 == 0) + (d1 == 0) + (d2 == 0) + (d3 == 0)
+        )
+        top = max(a0, a1, a2, a3, b0, b1, b2, b3, c0, c1, c2, c3, d0, d1, d2, d3)
+        corner = top if (top == a0 or top == a3 or top == d0 or top == d3) else 0.0
+
+        mono = 0.0
+        smooth = 0.0
+        for x0, x1, x2, x3 in (
+            (a0, a1, a2, a3), (b0, b1, b2, b3), (c0, c1, c2, c3), (d0, d1, d2, d3),
+            (a0, b0, c0, d0), (a1, b1, c1, d1), (a2, b2, c2, d2), (a3, b3, c3, d3),
+        ):
+            up = down = 0.0
+            diff = x1 - x0
+            if diff > 0:
+                up += diff
+            else:
+                down -= diff
+            if x0 and x1:
+                smooth += abs(diff)
+
+            diff = x2 - x1
+            if diff > 0:
+                up += diff
+            else:
+                down -= diff
+            if x1 and x2:
+                smooth += abs(diff)
+
+            diff = x3 - x2
+            if diff > 0:
+                up += diff
+            else:
+                down -= diff
+            if x2 and x3:
+                smooth += abs(diff)
+
+            mono += up if up < down else down
+
+        return {"corner": corner, "empty": float(empty), "mono": -mono, "smooth": -smooth}
 
     def evaluate(self, board):
         """The utility of a board: weighted sum of the four heuristics."""
         c = self.components(board)
         return (
-            self.w_corner * c["corner"]
-            + self.w_empty * c["empty"]
-            + self.w_mono * c["mono"]
-            + self.w_smooth * c["smooth"]
+            self.w_corner * c["corner"] + self.w_empty * c["empty"]
+            + self.w_mono * c["mono"] + self.w_smooth * c["smooth"]
         )
