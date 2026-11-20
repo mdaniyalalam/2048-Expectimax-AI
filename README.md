@@ -29,7 +29,7 @@ An intelligent game-playing agent for the stochastic 4×4 puzzle game **2048**, 
 │   └── cli_utils.py          # Shared terminal input/display utilities
 └── outputs/
     ├── results/              # per_game_results.csv and summary_table.csv
-    └── figures/              # Generated Matplotlib comparison charts (bar, box, line), architecture_diagram.png, and class_diagram.png
+    └── figures/              # Generated Matplotlib comparison charts (bar, box, line), architecture_diagram.png, class_diagram.png and gui_screenshot.png
 ```
 
 ---
